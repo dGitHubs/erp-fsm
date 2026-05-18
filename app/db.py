@@ -11,7 +11,9 @@ class Base(DeclarativeBase):
 
 
 engine = create_engine(settings.database_url)
-SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, class_=Session)
+SessionLocal = sessionmaker(
+    bind=engine, autoflush=False, autocommit=False, class_=Session
+)
 
 
 def get_db() -> Generator[Session, None, None]:

@@ -1,8 +1,13 @@
 from fastapi import APIRouter
 
-router = APIRouter()
+from app.config import settings
+
+router = APIRouter(tags=["Health"])
 
 
 @router.get("/health")
-async def health():
-    return {"status": "ok"}
+def healthcheck() -> dict[str, str]:
+    return {
+        "status": "ok",
+        "app": settings.app_name,
+    }

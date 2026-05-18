@@ -1,7 +1,11 @@
 from fastapi import FastAPI
 
-from app.routes import health
+from app.config import settings
+from app.routes.health import router as health_router
 
-app = FastAPI(title="ERP-FSM")
+app = FastAPI(
+    title=settings.app_name,
+    debug=settings.debug,
+)
 
-app.include_router(health.router)
+app.include_router(health_router)

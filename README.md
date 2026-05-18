@@ -1,21 +1,29 @@
 # ERP Fabrication Sur Mesure
 
-## Setup
+Socle initial d'une application interne pour la gestion de fabrication sur mesure.
+
+## Stack
+- Python 3.12+
+- FastAPI
+- SQLAlchemy 2
+- PostgreSQL
+- Alembic
+- Pydantic v2
+- Jinja2
+- PyYAML
+- uv
+
+## Lancer le projet
 
 ```bash
-cp .env.example .env
 uv sync
 uv run uvicorn app.main:app --reload
 ```
 
-## Docker
+## Vérification rapide
 
-```bash
-docker compose up
-```
+Ouvrir :
 
-## Tests
-
-```bash
-uv run pytest
+```text
+http://127.0.0.1:8000/health
 ```

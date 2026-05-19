@@ -1,136 +1,144 @@
-# ERP FSM - Project Status
+# ERP FSM - État du projet
 
-## Project Overview
+## Vue d’ensemble
 
-ERP FSM is a manufacturing-oriented ERP API focused on the operational flow from product definition to material planning and production readiness.
+ERP FSM est une API ERP orientée fabrication, centrée sur le flux opérationnel allant de la définition des produits jusqu’à la préparation et la faisabilité de la production.
 
-The current scope covers:
-- customer management
-- product management
-- material management
-- bill of materials (BOM)
-- manufacturing orders
-- material cost calculation
-- material requirements planning
-- material availability checks
-
----
-
-## Current Milestone
-
-The project now supports the full planning flow for a manufacturing order:
-
-1. define products and materials
-2. link materials to products through a BOM
-3. create manufacturing orders
-4. calculate required materials
-5. check whether current stock is sufficient to produce
-
-This provides a strong base for moving into stock consumption and manufacturing execution.
+Le périmètre actuel couvre :
+- la gestion des clients
+- la gestion des produits
+- la gestion des matières
+- la nomenclature produit (BOM)
+- les ordres de fabrication
+- le calcul du coût matière
+- le calcul des besoins matière
+- la vérification de la disponibilité matière
 
 ---
 
-## Completed
+## Jalons actuels
 
-### Core API Foundation
-- [x] Health check endpoint
-- [x] FastAPI application structure
-- [x] SQLAlchemy models and database integration
-- [x] Pydantic schemas
-- [x] Automated test setup
+Le projet permet maintenant de couvrir le flux de planification suivant pour un ordre de fabrication :
 
-### Customers
-- [x] Create customer
-- [x] List customers
-- [x] Get customer by id
-- [x] Validation and automated tests
+1. définir les produits et les matières
+2. relier les matières aux produits via une nomenclature (BOM)
+3. créer des ordres de fabrication
+4. calculer les besoins matière
+5. vérifier si le stock actuel permet de lancer la production
 
-### Products
-- [x] Create product
-- [x] List products
-- [x] Get product by id
-- [x] Validation for units and dimensions
-- [x] Automated tests
-
-### Materials
-- [x] Create material
-- [x] List materials
-- [x] Get material by id
-- [x] Validation for units and unit cost
-- [x] Support `quantity_on_hand`
-- [x] Automated tests
-
-### Bill of Materials (Product Materials)
-- [x] Link materials to products
-- [x] Define required quantity per material
-- [x] List product-material links
-- [x] Get product-material link by id
-- [x] Automated tests
-
-### Manufacturing Orders
-- [x] Create manufacturing order
-- [x] List manufacturing orders
-- [x] Get manufacturing order by id
-- [x] Validation for order status and quantity
-- [x] Automated tests
-
-### Costing
-- [x] Compute product material cost
-- [x] Support products with no BOM lines
-- [x] Automated tests
-
-### Manufacturing Planning
-- [x] Compute material requirements for a manufacturing order
-- [x] Compute material availability for a manufacturing order
-- [x] Detect whether an order can be produced with current stock
-- [x] Automated tests
+Cela constitue une base solide pour passer ensuite à la consommation de stock et à l’exécution de la fabrication.
 
 ---
 
-## Next Milestone
+## Réalisé
 
-### Material Consumption
-The next logical step is to move from planning to execution.
+### Fondations de l’API
+- [x] Endpoint de health check
+- [x] Structure de l’application FastAPI
+- [x] Modèles SQLAlchemy et intégration base de données
+- [x] Schémas Pydantic
+- [x] Mise en place des tests automatisés
 
-Planned work:
-- [ ] Add endpoint to consume materials for a manufacturing order
-- [ ] Decrease `quantity_on_hand` based on BOM × manufacturing order quantity
-- [ ] Prevent consumption when stock is insufficient
-- [ ] Return a material consumption summary
-- [ ] Add automated tests
+### Clients
+- [x] Créer un client
+- [x] Lister les clients
+- [x] Obtenir un client par identifiant
+- [x] Validations et tests automatisés
 
-This will make the system capable of not only checking production readiness, but also reflecting stock usage when production starts or completes.
+### Produits
+- [x] Créer un produit
+- [x] Lister les produits
+- [x] Obtenir un produit par identifiant
+- [x] Validation des unités et des dimensions
+- [x] Tests automatisés
+
+### Matières
+- [x] Créer une matière
+- [x] Lister les matières
+- [x] Obtenir une matière par identifiant
+- [x] Validation des unités et du coût unitaire
+- [x] Support du champ `quantity_on_hand`
+- [x] Tests automatisés
+
+### Nomenclature produit (Product Materials / BOM)
+- [x] Lier des matières à des produits
+- [x] Définir les quantités de matière requises par produit
+- [x] Lister les liens produit-matière
+- [x] Obtenir un lien produit-matière par identifiant
+- [x] Tests automatisés
+
+### Ordres de fabrication
+- [x] Créer un ordre de fabrication
+- [x] Lister les ordres de fabrication
+- [x] Obtenir un ordre de fabrication par identifiant
+- [x] Validation du statut et de la quantité
+- [x] Tests automatisés
+
+### Calcul des coûts
+- [x] Calculer le coût matière d’un produit
+- [x] Support des produits sans lignes de nomenclature
+- [x] Tests automatisés
+
+### Planification de fabrication
+- [x] Calculer les besoins matière d’un ordre de fabrication
+- [x] Calculer la disponibilité matière d’un ordre de fabrication
+- [x] Déterminer si un ordre peut être produit avec le stock actuel
+- [x] Tests automatisés
 
 ---
 
-## Future Backlog
+## Prochain jalon
 
-### Inventory Management
-- [ ] Stock movement history
-- [ ] Material receiving / replenishment
-- [ ] Inventory adjustments
-- [ ] Material reservation for manufacturing orders
+### Consommation matière
+La prochaine étape logique est de passer de la planification à l’exécution.
 
-### Manufacturing Execution
-- [ ] Richer manufacturing order lifecycle
-- [ ] Work operations / routing steps
-- [ ] Labor and time tracking
-- [ ] Production completion workflow
+Travaux prévus :
+- [ ] Ajouter un endpoint pour consommer les matières d’un ordre de fabrication
+- [ ] Décrémenter `quantity_on_hand` en fonction de la nomenclature × la quantité de l’ordre
+- [ ] Empêcher la consommation si le stock est insuffisant
+- [ ] Retourner un récapitulatif de consommation matière
+- [ ] Ajouter les tests automatisés
 
-### Supply and Business Features
-- [ ] Purchasing support
-- [ ] Sales quotes
-- [ ] Pricing rules
-- [ ] Margin tracking
+Cette évolution permettra au système non seulement de vérifier la faisabilité de la production, mais aussi de refléter la consommation réelle de stock au moment du lancement ou de l’exécution d’un ordre.
 
 ---
 
-## Quality Status
+## Backlog futur
 
-Current validated status:
-- [x] Linting passing
-- [x] Test suite passing
-- [x] Manufacturing planning flow implemented
-- [x] Material availability flow implemented
+### Gestion d’inventaire
+- [ ] Historique des mouvements de stock
+- [ ] Réception / réapprovisionnement de matières
+- [ ] Ajustements d’inventaire
+- [ ] Réservation de matière pour les ordres de fabrication
 
-> Latest verified status: 54 tests passing
+### Exécution de fabrication
+- [ ] Cycle de vie plus riche des ordres de fabrication
+- [ ] Opérations / gammes de fabrication
+- [ ] Suivi du temps et de la main-d’œuvre
+- [ ] Workflow de fin de production
+
+### Fonctions supply et business
+- [ ] Support des achats
+- [ ] Devis de vente
+- [ ] Règles de tarification
+- [ ] Suivi des marges
+
+### Front-end
+- [ ] Ajouter une interface web pour consommer l’API
+- [ ] Créer un dashboard de base
+- [ ] Ajouter les écrans Clients, Produits, Matières
+- [ ] Ajouter les écrans Ordres de fabrication
+- [ ] Afficher les besoins matière et la disponibilité matière
+- [ ] Préparer la base pour la consommation matière
+
+---
+
+## État qualité
+
+État validé à ce jour :
+- [x] Linting OK
+- [x] Suite de tests OK
+- [x] Flux de planification de fabrication implémenté
+- [x] Flux de disponibilité matière implémenté
+
+> Dernier état vérifié : 54 tests passent

@@ -10,6 +10,7 @@ def test_create_material(client: TestClient) -> None:
             "description": "Panneau de contreplaqué",
             "unit": "square_foot",
             "unit_cost": 12.5,
+            "quantity_on_hand": 25.0,
         },
     )
 

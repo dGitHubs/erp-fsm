@@ -18,6 +18,7 @@ class MaterialCreate(BaseModel):
     description: str | None = None
     unit: MaterialUnit = MaterialUnit.UNIT
     unit_cost: float = Field(ge=0)
+    quantity_on_hand: float = Field(default=0, ge=0)
 
 
 class MaterialResponse(BaseModel):
@@ -27,6 +28,7 @@ class MaterialResponse(BaseModel):
     description: str | None
     unit: MaterialUnit
     unit_cost: float
+    quantity_on_hand: float
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

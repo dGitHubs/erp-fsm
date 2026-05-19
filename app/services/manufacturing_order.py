@@ -5,7 +5,12 @@ from sqlalchemy.orm import Session
 from app.models.customer import Customer
 from app.models.manufacturing_order import ManufacturingOrder
 from app.models.product import Product
+from app.models.product_material import ProductMaterial
 from app.schemas.manufacturing_order import ManufacturingOrderCreate
+from app.schemas.material_requirements import (
+    ManufacturingOrderMaterialRequirementLineResponse,
+    ManufacturingOrderMaterialRequirementsResponse,
+)
 
 
 class CustomerNotFoundError(Exception):
@@ -63,3 +68,38 @@ def get_manufacturing_order_by_id(
 ) -> ManufacturingOrder | None:
     statement = select(ManufacturingOrder).where(ManufacturingOrder.id == order_id)
     return db.execute(statement).scalars().first()
+
+
+def get_manufacturing_order_material_requirements(
+    db: Session,
+    order_id: int,
+) -> ManufacturingOrderMaterialRequirementsResponse | None:
+    order = db.get(ManufacturingOrder, order_id)
+    if order is None:
+        return None
+
+    statement = (
+        select(ProductMaterial)
+        .where(ProductMaterial.product_id == order.product_id)
+        .order_by(ProductMaterial.id.asc())
+    )
+    product_materials = list(db.execute(statement).scalars().all())
+
+    lines: list[ManufacturingOrderMaterialRequirementLineResponse] = []
+
+    for product_material in product_materials:
+        required_quantity = product_material.quantity * order.quantity
+        lines.append(
+            ManufacturingOrderMaterialRequirementLineResponse(
+                material_id=product_material.material_id,
+                quantity_per_product=product_material.quantity,
+                required_quantity=required_quantity,
+            )
+        )
+
+    return ManufacturingOrderMaterialRequirementsResponse(
+        manufacturing_order_id=order.id,
+        product_id=order.product_id,
+        order_quantity=order.quantity,
+        lines=lines,
+    )

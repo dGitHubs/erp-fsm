@@ -4,6 +4,10 @@ from app.schemas.manufacturing_order import (
     ManufacturingOrderResponse,
 )
 from app.schemas.material import MaterialCreate, MaterialResponse
+from app.schemas.material_availability import (
+    ManufacturingOrderMaterialAvailabilityLineResponse,
+    ManufacturingOrderMaterialAvailabilityResponse,
+)
 from app.schemas.material_requirements import (
     ManufacturingOrderMaterialRequirementLineResponse,
     ManufacturingOrderMaterialRequirementsResponse,
@@ -12,10 +16,6 @@ from app.schemas.product import ProductCreate, ProductResponse
 from app.schemas.product_cost import (
     ProductMaterialCostLineResponse,
     ProductMaterialCostResponse,
-)
-from app.schemas.product_material import (
-    ProductMaterialCreate,
-    ProductMaterialResponse,
 )
 
 __all__ = [
@@ -33,4 +33,6 @@ __all__ = [
     "ProductMaterialCostResponse",
     "ProductMaterialCreate",
     "ProductMaterialResponse",
+    "ManufacturingOrderMaterialAvailabilityLineResponse",
+    "ManufacturingOrderMaterialAvailabilityResponse",
 ]

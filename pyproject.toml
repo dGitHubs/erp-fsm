@@ -35,5 +35,6 @@ target-version = "py312"
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
 
-[tool.pytest.ini_options]
-testpaths = ["tests"]
+[tool.ruff.lint.per-file-ignores]
+"alembic/versions/*.py" = ["E501", "I001", "UP007", "UP035"]
+"app/routes/*.py" = ["B008"]

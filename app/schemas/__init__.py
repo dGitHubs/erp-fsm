@@ -5,6 +5,10 @@ from app.schemas.manufacturing_order import (
 )
 from app.schemas.material import MaterialCreate, MaterialResponse
 from app.schemas.product import ProductCreate, ProductResponse
+from app.schemas.product_cost import (
+    ProductMaterialCostLineResponse,
+    ProductMaterialCostResponse,
+)
 from app.schemas.product_material import (
     ProductMaterialCreate,
     ProductMaterialResponse,
@@ -19,6 +23,8 @@ __all__ = [
     "MaterialResponse",
     "ProductCreate",
     "ProductResponse",
+    "ProductMaterialCostLineResponse",
+    "ProductMaterialCostResponse",
     "ProductMaterialCreate",
     "ProductMaterialResponse",
 ]

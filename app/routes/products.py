@@ -3,10 +3,12 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.schemas.product import ProductCreate, ProductResponse
+from app.schemas.product_cost import ProductMaterialCostResponse
 from app.services.product import (
     ProductSkuAlreadyExistsError,
     create_product,
     get_product_by_id,
+    get_product_material_cost,
     list_products,
 )
 
@@ -40,3 +42,14 @@ def get_product_endpoint(
     if product is None:
         raise HTTPException(status_code=404, detail="Product not found")
     return product
+
+
+@router.get("/{product_id}/material-cost", response_model=ProductMaterialCostResponse)
+def get_product_material_cost_endpoint(
+    product_id: int,
+    db: Session = Depends(get_db),
+) -> ProductMaterialCostResponse:
+    product_cost = get_product_material_cost(db, product_id)
+    if product_cost is None:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return product_cost

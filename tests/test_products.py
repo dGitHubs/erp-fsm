@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 from fastapi.testclient import TestClient
 
 
@@ -194,3 +196,107 @@ def test_create_product_rejects_non_positive_depth(client: TestClient) -> None:
     )
 
     assert response.status_code == 422
+
+def create_material_for_cost(client: TestClient, sku: str, unit_cost: float) -> int:
+    response = client.post(
+        "/materials/",
+        json={
+            "sku": sku,
+            "name": f"Material {sku}",
+            "description": "Material for cost test",
+            "unit": "unit",
+            "unit_cost": unit_cost,
+        },
+    )
+    assert response.status_code == 201, response.text
+    return response.json()["id"]
+
+
+def test_get_product_material_cost(client: TestClient) -> None:
+    product_response = client.post(
+        "/products/",
+        json={
+            "sku": f"SKU-{uuid4().hex[:8]}",
+            "name": "Produit coût",
+            "description": "Produit pour calcul coût",
+            "unit": "unit",
+            "width": 100.0,
+            "height": 50.0,
+            "depth": 10.0,
+        },
+    )
+    assert product_response.status_code == 201, product_response.text
+    product_id = product_response.json()["id"]
+
+    material_id_1 = create_material_for_cost(client, f"MAT-{uuid4().hex[:8]}", 4.5)
+    material_id_2 = create_material_for_cost(client, f"MAT-{uuid4().hex[:8]}", 12.0)
+
+    response_1 = client.post(
+        "/product-materials/",
+        json={
+            "product_id": product_id,
+            "material_id": material_id_1,
+            "quantity": 3.0,
+        },
+    )
+    assert response_1.status_code == 201, response_1.text
+
+    response_2 = client.post(
+        "/product-materials/",
+        json={
+            "product_id": product_id,
+            "material_id": material_id_2,
+            "quantity": 2.0,
+        },
+    )
+    assert response_2.status_code == 201, response_2.text
+
+    response = client.get(f"/products/{product_id}/material-cost")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["product_id"] == product_id
+    assert data["material_cost"] == 37.5
+    assert len(data["lines"]) == 2
+
+    assert data["lines"][0]["material_id"] == material_id_1
+    assert data["lines"][0]["quantity"] == 3.0
+    assert data["lines"][0]["unit_cost"] == 4.5
+    assert data["lines"][0]["line_cost"] == 13.5
+
+    assert data["lines"][1]["material_id"] == material_id_2
+    assert data["lines"][1]["quantity"] == 2.0
+    assert data["lines"][1]["unit_cost"] == 12.0
+    assert data["lines"][1]["line_cost"] == 24.0
+
+
+def test_get_product_material_cost_with_no_materials(client: TestClient) -> None:
+    product_response = client.post(
+        "/products/",
+        json={
+            "sku": f"SKU-{uuid4().hex[:8]}",
+            "name": "Produit sans BOM",
+            "description": "Produit sans matières",
+            "unit": "unit",
+            "width": 100.0,
+            "height": 50.0,
+            "depth": 10.0,
+        },
+    )
+    assert product_response.status_code == 201, product_response.text
+    product_id = product_response.json()["id"]
+
+    response = client.get(f"/products/{product_id}/material-cost")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["product_id"] == product_id
+    assert data["material_cost"] == 0.0
+    assert data["lines"] == []
+
+
+def test_get_product_material_cost_product_not_found(client: TestClient) -> None:
+    response = client.get("/products/999/material-cost")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Product not found"}

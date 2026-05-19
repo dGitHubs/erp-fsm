@@ -17,6 +17,7 @@ def create_material(db: Session, data: MaterialCreate) -> Material:
         description=data.description,
         unit=data.unit.value,
         unit_cost=data.unit_cost,
+        quantity_on_hand=data.quantity_on_hand,
     )
     db.add(material)
 

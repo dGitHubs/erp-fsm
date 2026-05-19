@@ -241,3 +241,150 @@ def test_create_manufacturing_order_rejects_non_positive_quantity(client: TestCl
     )
 
     assert response.status_code == 422
+
+    def create_material_for_requirements(
+        client: TestClient,
+        sku: str,
+        unit_cost: float = 1.0,
+    ) -> int:
+        response = client.post(
+            "/materials/",
+            json={
+                "sku": sku,
+                "name": f"Material {sku}",
+                "description": "Material for manufacturing requirements test",
+                "unit": "unit",
+                "unit_cost": unit_cost,
+            },
+        )
+        assert response.status_code == 201, response.text
+        return response.json()["id"]
+
+    def create_product_for_requirements(client: TestClient) -> int:
+        response = client.post(
+            "/products/",
+            json={
+                "sku": f"PROD-{uuid4().hex[:8]}",
+                "name": "Produit requirements",
+                "description": "Produit pour test de besoins matière",
+                "unit": "unit",
+                "width": 100.0,
+                "height": 50.0,
+                "depth": 10.0,
+            },
+        )
+        assert response.status_code == 201, response.text
+        return response.json()["id"]
+
+    def add_product_material_for_requirements(
+        client: TestClient,
+        product_id: int,
+        material_id: int,
+        quantity: float,
+    ) -> None:
+        response = client.post(
+            "/product-materials/",
+            json={
+                "product_id": product_id,
+                "material_id": material_id,
+                "quantity": quantity,
+            },
+        )
+        assert response.status_code == 201, response.text
+
+    def create_customer_for_requirements(client: TestClient) -> int:
+        response = client.post(
+            "/customers/",
+            json={
+                "name": "Client requirements",
+                "email": f"requirements-{uuid4().hex[:8]}@example.com",
+                "phone": "555-123-4567",
+                "address": "123 Test Street",
+            },
+        )
+        assert response.status_code == 201, response.text
+        return response.json()["id"]
+
+    def create_manufacturing_order_for_requirements(
+        client: TestClient,
+        customer_id: int,
+        product_id: int,
+        quantity: int,
+    ) -> int:
+        response = client.post(
+            "/manufacturing-orders/",
+            json={
+                "reference": f"MO-{uuid4().hex[:8]}",
+                "customer_id": customer_id,
+                "product_id": product_id,
+                "quantity": quantity,
+                "description": "Ordre pour test besoins matière",
+                "status": "draft",
+            },
+        )
+        assert response.status_code == 201, response.text
+        return response.json()["id"]
+
+    def test_get_manufacturing_order_material_requirements(client: TestClient) -> None:
+        customer_id = create_customer_for_requirements(client)
+        product_id = create_product_for_requirements(client)
+
+        material_id_1 = create_material_for_requirements(client, f"MAT-{uuid4().hex[:8]}")
+        material_id_2 = create_material_for_requirements(client, f"MAT-{uuid4().hex[:8]}")
+
+        add_product_material_for_requirements(client, product_id, material_id_1, 2.5)
+        add_product_material_for_requirements(client, product_id, material_id_2, 1.0)
+
+        order_id = create_manufacturing_order_for_requirements(
+            client,
+            customer_id=customer_id,
+            product_id=product_id,
+            quantity=4,
+        )
+
+        response = client.get(f"/manufacturing-orders/{order_id}/material-requirements")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["manufacturing_order_id"] == order_id
+        assert data["product_id"] == product_id
+        assert data["order_quantity"] == 4
+        assert len(data["lines"]) == 2
+
+        assert data["lines"][0]["material_id"] == material_id_1
+        assert data["lines"][0]["quantity_per_product"] == 2.5
+        assert data["lines"][0]["required_quantity"] == 10.0
+
+        assert data["lines"][1]["material_id"] == material_id_2
+        assert data["lines"][1]["quantity_per_product"] == 1.0
+        assert data["lines"][1]["required_quantity"] == 4.0
+
+    def test_get_manufacturing_order_material_requirements_with_no_bom(
+        client: TestClient,
+    ) -> None:
+        customer_id = create_customer_for_requirements(client)
+        product_id = create_product_for_requirements(client)
+
+        order_id = create_manufacturing_order_for_requirements(
+            client,
+            customer_id=customer_id,
+            product_id=product_id,
+            quantity=3,
+        )
+
+        response = client.get(f"/manufacturing-orders/{order_id}/material-requirements")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["manufacturing_order_id"] == order_id
+        assert data["product_id"] == product_id
+        assert data["order_quantity"] == 3
+        assert data["lines"] == []
+
+    def test_get_manufacturing_order_material_requirements_not_found(
+        client: TestClient,
+    ) -> None:
+        response = client.get("/manufacturing-orders/999/material-requirements")
+
+        assert response.status_code == 404
+        assert response.json() == {"detail": "Manufacturing order not found"}

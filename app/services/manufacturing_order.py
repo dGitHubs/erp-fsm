@@ -7,6 +7,10 @@ from app.models.manufacturing_order import ManufacturingOrder
 from app.models.product import Product
 from app.models.product_material import ProductMaterial
 from app.schemas.manufacturing_order import ManufacturingOrderCreate
+from app.schemas.material_availability import (
+    ManufacturingOrderMaterialAvailabilityLineResponse,
+    ManufacturingOrderMaterialAvailabilityResponse,
+)
 from app.schemas.material_requirements import (
     ManufacturingOrderMaterialRequirementLineResponse,
     ManufacturingOrderMaterialRequirementsResponse,
@@ -101,5 +105,49 @@ def get_manufacturing_order_material_requirements(
         manufacturing_order_id=order.id,
         product_id=order.product_id,
         order_quantity=order.quantity,
+        lines=lines,
+    )
+
+
+def get_manufacturing_order_material_availability(
+    db: Session,
+    order_id: int,
+) -> ManufacturingOrderMaterialAvailabilityResponse | None:
+    order = db.get(ManufacturingOrder, order_id)
+    if order is None:
+        return None
+
+    statement = (
+        select(ProductMaterial)
+        .where(ProductMaterial.product_id == order.product_id)
+        .order_by(ProductMaterial.id.asc())
+    )
+    product_materials = list(db.execute(statement).scalars().all())
+
+    lines: list[ManufacturingOrderMaterialAvailabilityLineResponse] = []
+    can_produce = True
+
+    for product_material in product_materials:
+        required_quantity = product_material.quantity * order.quantity
+        available_quantity = product_material.material.quantity_on_hand
+        missing_quantity = max(required_quantity - available_quantity, 0.0)
+
+        if missing_quantity > 0:
+            can_produce = False
+
+        lines.append(
+            ManufacturingOrderMaterialAvailabilityLineResponse(
+                material_id=product_material.material_id,
+                required_quantity=required_quantity,
+                available_quantity=available_quantity,
+                missing_quantity=missing_quantity,
+            )
+        )
+
+    return ManufacturingOrderMaterialAvailabilityResponse(
+        manufacturing_order_id=order.id,
+        product_id=order.product_id,
+        order_quantity=order.quantity,
+        can_produce=can_produce,
         lines=lines,
     )

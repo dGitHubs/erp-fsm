@@ -6,6 +6,9 @@ from app.schemas.manufacturing_order import (
     ManufacturingOrderCreate,
     ManufacturingOrderResponse,
 )
+from app.schemas.material_availability import (
+    ManufacturingOrderMaterialAvailabilityResponse,
+)
 from app.schemas.material_requirements import (
     ManufacturingOrderMaterialRequirementsResponse,
 )
@@ -15,6 +18,7 @@ from app.services.manufacturing_order import (
     ProductNotFoundError,
     create_manufacturing_order,
     get_manufacturing_order_by_id,
+    get_manufacturing_order_material_availability,
     get_manufacturing_order_material_requirements,
     list_manufacturing_orders,
 )
@@ -74,3 +78,17 @@ def get_manufacturing_order_material_requirements_endpoint(
     if requirements is None:
         raise HTTPException(status_code=404, detail="Manufacturing order not found")
     return requirements
+
+
+@router.get(
+    "/{order_id}/material-availability",
+    response_model=ManufacturingOrderMaterialAvailabilityResponse,
+)
+def get_manufacturing_order_material_availability_endpoint(
+    order_id: int,
+    db: Session = Depends(get_db),
+) -> ManufacturingOrderMaterialAvailabilityResponse:
+    availability = get_manufacturing_order_material_availability(db, order_id)
+    if availability is None:
+        raise HTTPException(status_code=404, detail="Manufacturing order not found")
+    return availability

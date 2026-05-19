@@ -17,6 +17,10 @@ from app.schemas.product_cost import (
     ProductMaterialCostLineResponse,
     ProductMaterialCostResponse,
 )
+from app.schemas.product_material import (
+    ProductMaterialCreate,
+    ProductMaterialResponse,
+)
 
 __all__ = [
     "CustomerCreate",
@@ -25,6 +29,8 @@ __all__ = [
     "ManufacturingOrderResponse",
     "MaterialCreate",
     "MaterialResponse",
+    "ManufacturingOrderMaterialAvailabilityLineResponse",
+    "ManufacturingOrderMaterialAvailabilityResponse",
     "ManufacturingOrderMaterialRequirementLineResponse",
     "ManufacturingOrderMaterialRequirementsResponse",
     "ProductCreate",
@@ -33,6 +39,4 @@ __all__ = [
     "ProductMaterialCostResponse",
     "ProductMaterialCreate",
     "ProductMaterialResponse",
-    "ManufacturingOrderMaterialAvailabilityLineResponse",
-    "ManufacturingOrderMaterialAvailabilityResponse",
 ]

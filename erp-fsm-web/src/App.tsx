@@ -1,9 +1,16 @@
 import { useState } from 'react';
 import ManufacturingOrders from './pages/ManufacturingOrders';
 import Materials from './pages/Materials';
+import Products from './pages/Products';
 import './App.css';
 
-type Page = 'orders' | 'materials';
+type Page = 'orders' | 'products' | 'materials';
+
+const NAV: Array<{ key: Page; label: string }> = [
+  { key: 'orders', label: 'Ordres de fabrication' },
+  { key: 'products', label: 'Produits' },
+  { key: 'materials', label: 'Matières' },
+];
 
 export default function App() {
   const [page, setPage] = useState<Page>('orders');
@@ -13,22 +20,20 @@ export default function App() {
       <nav className="nav">
         <span className="nav-brand">ERP FSM</span>
         <div className="nav-links">
-          <button
-            className={`nav-link ${page === 'orders' ? 'active' : ''}`}
-            onClick={() => setPage('orders')}
-          >
-            Ordres de fabrication
-          </button>
-          <button
-            className={`nav-link ${page === 'materials' ? 'active' : ''}`}
-            onClick={() => setPage('materials')}
-          >
-            Matières
-          </button>
+          {NAV.map((n) => (
+            <button
+              key={n.key}
+              className={`nav-link ${page === n.key ? 'active' : ''}`}
+              onClick={() => setPage(n.key)}
+            >
+              {n.label}
+            </button>
+          ))}
         </div>
       </nav>
       <main className="main">
         {page === 'orders' && <ManufacturingOrders />}
+        {page === 'products' && <Products />}
         {page === 'materials' && <Materials />}
       </main>
     </div>

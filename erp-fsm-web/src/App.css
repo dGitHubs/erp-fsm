@@ -115,6 +115,11 @@ select.input {
   appearance: auto;
 }
 
+/* BOM panel */
+.bom-add-btn { margin-top: 12px; }
+.bom-form { margin-top: 12px; }
+.td--dims { font-size: 13px; color: var(--text); font-family: var(--mono); }
+
 .page-state {
   padding: 48px 0;
   color: var(--text);

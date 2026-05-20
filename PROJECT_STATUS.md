@@ -2,37 +2,33 @@
 
 ## Vue d'ensemble
 
-ERP FSM est une API ERP orientée fabrication, centrée sur le flux opérationnel allant de la définition des produits jusqu'à l'exécution de la production et la traçabilité du stock.
+ERP FSM est une application ERP orientée fabrication couvrant le flux complet de la définition des produits jusqu'à l'exécution de la production, avec une interface web et une API REST.
 
 Le périmètre actuel couvre :
-- la gestion des clients
-- la gestion des produits
-- la gestion des matières
+- la gestion des clients, produits et matières
 - la nomenclature produit (BOM)
-- les ordres de fabrication
-- le calcul du coût matière
-- le calcul des besoins matière
-- la vérification de la disponibilité matière
+- les ordres de fabrication avec cycle de vie validé
+- le calcul des besoins matière et la vérification de disponibilité
 - la consommation matière et la mise à jour du stock
-- l'historique des mouvements de stock
-- la réception de stock
-- les transitions de statut validées des ordres de fabrication
+- l'historique des mouvements de stock (consommation, réception)
+- la réception de stock entrant
+- une interface web React pour gérer ordres, produits, matières et BOM
 
 ---
 
 ## Jalons actuels
 
-Le projet couvre maintenant le flux complet de planification et d'exécution pour un ordre de fabrication :
+Le projet couvre le flux complet de planification et d'exécution :
 
-1. définir les produits et les matières
-2. relier les matières aux produits via une nomenclature (BOM)
-3. créer des ordres de fabrication
+1. définir les produits et les matières (via l'UI)
+2. relier les matières aux produits via une nomenclature BOM (via l'UI)
+3. créer des ordres de fabrication (via l'UI)
 4. calculer les besoins matière
-5. vérifier si le stock actuel permet de lancer la production
-6. consommer les matières et décrémenter le stock
-7. tracer chaque mouvement de stock (consommation, réception)
-8. réceptionner du stock entrant
-9. faire progresser l'ordre à travers un cycle de vie validé
+5. vérifier si le stock permet de lancer la production
+6. consommer les matières et décrémenter le stock (via l'UI)
+7. tracer chaque mouvement de stock
+8. réceptionner du stock entrant (via l'UI)
+9. faire progresser l'ordre à travers un cycle de vie validé (via l'UI)
 
 ---
 
@@ -44,6 +40,7 @@ Le projet couvre maintenant le flux complet de planification et d'exécution pou
 - [x] Modèles SQLAlchemy et intégration base de données
 - [x] Schémas Pydantic
 - [x] Mise en place des tests automatisés (PostgreSQL, transaction rollback par test)
+- [x] Middleware CORS pour le frontend
 
 ### Clients
 - [x] Créer un client
@@ -107,19 +104,21 @@ Le projet couvre maintenant le flux complet de planification et d'exécution pou
 - [x] Historique des mouvements par matière (`GET /materials/{id}/stock-movements`)
 - [x] Tests automatisés
 
+### Interface web (React + Vite + TypeScript)
+- [x] Navigation entre les sections (Ordres, Produits, Matières)
+- [x] Page Ordres de fabrication : liste avec noms client/produit, badges de statut, transitions, consommation, création
+- [x] Page Produits : liste, création, panneau BOM dépliable par produit avec ajout de matières
+- [x] Page Matières : liste avec stock (rouge si zéro), réception inline, historique des mouvements dépliable, création
+- [x] Dark mode automatique
+
 ---
 
 ## Prochain jalon
 
-### Front-end
-La prochaine étape logique est de donner une interface utilisable à l'API.
-
-Travaux prévus :
-- [ ] Ajouter les écrans Clients, Produits, Matières
-- [ ] Ajouter les écrans Ordres de fabrication avec statut et actions (confirmer, consommer, annuler)
-- [ ] Afficher les besoins matière et la disponibilité matière
-- [ ] Afficher l'historique des mouvements de stock par matière
-- [ ] Créer un dashboard de base
+### Écrans manquants et améliorations UI
+- [ ] Page Clients (liste + création)
+- [ ] Affichage de la disponibilité matière depuis la page ordres
+- [ ] Dashboard de base (ordres en cours, alertes stock bas)
 
 ---
 
@@ -145,10 +144,11 @@ Travaux prévus :
 
 État validé à ce jour :
 - [x] Linting OK
-- [x] Suite de tests OK
+- [x] Suite de tests OK (75 tests)
 - [x] Flux de planification de fabrication implémenté
 - [x] Flux de disponibilité matière implémenté
 - [x] Flux d'exécution (consommation, réception, mouvements de stock) implémenté
 - [x] Cycle de vie des ordres de fabrication implémenté
+- [x] Interface web fonctionnelle
 
 > Dernier état vérifié : 75 tests passent

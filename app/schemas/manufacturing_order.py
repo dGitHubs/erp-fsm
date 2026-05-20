@@ -21,6 +21,10 @@ class ManufacturingOrderCreate(BaseModel):
     status: ManufacturingOrderStatus = ManufacturingOrderStatus.DRAFT
 
 
+class ManufacturingOrderStatusUpdate(BaseModel):
+    status: ManufacturingOrderStatus
+
+
 class ManufacturingOrderResponse(BaseModel):
     id: int
     reference: str

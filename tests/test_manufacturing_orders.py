@@ -481,3 +481,172 @@ def test_get_manufacturing_order_material_availability_not_found(
 
     assert response.status_code == 404
     assert response.json() == {"detail": "Manufacturing order not found"}
+
+
+def test_consume_manufacturing_order_materials(client: TestClient) -> None:
+    customer_id = create_customer_for_requirements(client)
+    product_id = create_product_for_requirements(client)
+
+    material_id = create_material_for_requirements(
+        client,
+        sku=f"MAT-{uuid4().hex[:8]}",
+        unit_cost=2.0,
+        quantity_on_hand=50.0,
+    )
+    add_product_material_for_requirements(client, product_id, material_id, 3.0)
+
+    order_id = create_manufacturing_order_for_requirements(
+        client, customer_id=customer_id, product_id=product_id, quantity=5
+    )
+
+    response = client.post(f"/manufacturing-orders/{order_id}/consume")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["manufacturing_order_id"] == order_id
+    assert data["order_quantity"] == 5
+    assert len(data["lines"]) == 1
+    line = data["lines"][0]
+    assert line["material_id"] == material_id
+    assert line["quantity_consumed"] == 15.0   # 3.0 × 5
+    assert line["quantity_on_hand_before"] == 50.0
+    assert line["quantity_on_hand_after"] == 35.0
+
+
+def test_consume_manufacturing_order_materials_updates_stock(client: TestClient) -> None:
+    customer_id = create_customer_for_requirements(client)
+    product_id = create_product_for_requirements(client)
+
+    material_id = create_material_for_requirements(
+        client,
+        sku=f"MAT-{uuid4().hex[:8]}",
+        unit_cost=1.0,
+        quantity_on_hand=20.0,
+    )
+    add_product_material_for_requirements(client, product_id, material_id, 4.0)
+
+    order_id = create_manufacturing_order_for_requirements(
+        client, customer_id=customer_id, product_id=product_id, quantity=3
+    )
+
+    client.post(f"/manufacturing-orders/{order_id}/consume")
+
+    availability = client.get(f"/manufacturing-orders/{order_id}/material-availability").json()
+    assert availability["lines"][0]["available_quantity"] == 8.0  # 20 - (4×3)
+
+
+def test_consume_manufacturing_order_materials_insufficient_stock(
+    client: TestClient,
+) -> None:
+    customer_id = create_customer_for_requirements(client)
+    product_id = create_product_for_requirements(client)
+
+    material_id = create_material_for_requirements(
+        client,
+        sku=f"MAT-{uuid4().hex[:8]}",
+        unit_cost=1.0,
+        quantity_on_hand=5.0,
+    )
+    add_product_material_for_requirements(client, product_id, material_id, 4.0)
+
+    order_id = create_manufacturing_order_for_requirements(
+        client, customer_id=customer_id, product_id=product_id, quantity=3  # requires 12, only 5
+    )
+
+    response = client.post(f"/manufacturing-orders/{order_id}/consume")
+
+    assert response.status_code == 409
+    assert response.json() == {"detail": "Insufficient stock to consume materials"}
+
+
+def test_consume_manufacturing_order_not_found(client: TestClient) -> None:
+    response = client.post("/manufacturing-orders/999/consume")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Manufacturing order not found"}
+
+
+def test_consume_sets_status_to_done(client: TestClient) -> None:
+    customer_id = create_customer_for_requirements(client)
+    product_id = create_product_for_requirements(client)
+    material_id = create_material_for_requirements(
+        client, sku=f"MAT-{uuid4().hex[:8]}", quantity_on_hand=100.0
+    )
+    add_product_material_for_requirements(client, product_id, material_id, 1.0)
+    order_id = create_manufacturing_order_for_requirements(
+        client, customer_id=customer_id, product_id=product_id, quantity=1
+    )
+
+    client.post(f"/manufacturing-orders/{order_id}/consume")
+
+    order = client.get(f"/manufacturing-orders/{order_id}").json()
+    assert order["status"] == "done"
+
+
+def test_consume_twice_is_rejected(client: TestClient) -> None:
+    customer_id = create_customer_for_requirements(client)
+    product_id = create_product_for_requirements(client)
+    material_id = create_material_for_requirements(
+        client, sku=f"MAT-{uuid4().hex[:8]}", quantity_on_hand=100.0
+    )
+    add_product_material_for_requirements(client, product_id, material_id, 1.0)
+    order_id = create_manufacturing_order_for_requirements(
+        client, customer_id=customer_id, product_id=product_id, quantity=1
+    )
+
+    client.post(f"/manufacturing-orders/{order_id}/consume")
+    response = client.post(f"/manufacturing-orders/{order_id}/consume")
+
+    assert response.status_code == 409
+    assert response.json() == {"detail": "Order has already been consumed or cancelled"}
+
+
+def test_consume_cancelled_order_is_rejected(client: TestClient) -> None:
+    customer_id = create_customer_for_requirements(client)
+    product_id = create_product_for_requirements(client)
+    order_id = create_manufacturing_order_for_requirements(
+        client, customer_id=customer_id, product_id=product_id, quantity=1
+    )
+
+    client.patch(f"/manufacturing-orders/{order_id}/status", json={"status": "cancelled"})
+    response = client.post(f"/manufacturing-orders/{order_id}/consume")
+
+    assert response.status_code == 409
+    assert response.json() == {"detail": "Order has already been consumed or cancelled"}
+
+
+def test_status_transition_valid(client: TestClient) -> None:
+    customer_id = create_customer_for_requirements(client)
+    product_id = create_product_for_requirements(client)
+    order_id = create_manufacturing_order_for_requirements(
+        client, customer_id=customer_id, product_id=product_id, quantity=1
+    )
+
+    response = client.patch(
+        f"/manufacturing-orders/{order_id}/status", json={"status": "confirmed"}
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "confirmed"
+
+
+def test_status_transition_invalid(client: TestClient) -> None:
+    customer_id = create_customer_for_requirements(client)
+    product_id = create_product_for_requirements(client)
+    order_id = create_manufacturing_order_for_requirements(
+        client, customer_id=customer_id, product_id=product_id, quantity=1
+    )
+
+    # draft → done is not allowed (must go through confirmed → in_progress → done)
+    response = client.patch(
+        f"/manufacturing-orders/{order_id}/status", json={"status": "done"}
+    )
+
+    assert response.status_code == 409
+
+
+def test_status_transition_order_not_found(client: TestClient) -> None:
+    response = client.patch(
+        "/manufacturing-orders/999/status", json={"status": "confirmed"}
+    )
+    assert response.status_code == 404

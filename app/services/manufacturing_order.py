@@ -6,10 +6,15 @@ from app.models.customer import Customer
 from app.models.manufacturing_order import ManufacturingOrder
 from app.models.product import Product
 from app.models.product_material import ProductMaterial
-from app.schemas.manufacturing_order import ManufacturingOrderCreate
+from app.models.stock_movement import MovementType, StockMovement
+from app.schemas.manufacturing_order import ManufacturingOrderCreate, ManufacturingOrderStatus
 from app.schemas.material_availability import (
     ManufacturingOrderMaterialAvailabilityLineResponse,
     ManufacturingOrderMaterialAvailabilityResponse,
+)
+from app.schemas.material_consumption import (
+    ManufacturingOrderConsumptionResponse,
+    MaterialConsumptionLineResponse,
 )
 from app.schemas.material_requirements import (
     ManufacturingOrderMaterialRequirementLineResponse,
@@ -25,8 +30,44 @@ class ProductNotFoundError(Exception):
     pass
 
 
+class ManufacturingOrderNotFoundError(Exception):
+    pass
+
+
 class ManufacturingOrderReferenceAlreadyExistsError(Exception):
     pass
+
+
+class InsufficientStockError(Exception):
+    pass
+
+
+class OrderNotConsumableError(Exception):
+    pass
+
+
+class InvalidStatusTransitionError(Exception):
+    pass
+
+
+_TERMINAL_STATUSES = {ManufacturingOrderStatus.DONE, ManufacturingOrderStatus.CANCELLED}
+
+_ALLOWED_TRANSITIONS: dict[ManufacturingOrderStatus, set[ManufacturingOrderStatus]] = {
+    ManufacturingOrderStatus.DRAFT: {
+        ManufacturingOrderStatus.CONFIRMED,
+        ManufacturingOrderStatus.CANCELLED,
+    },
+    ManufacturingOrderStatus.CONFIRMED: {
+        ManufacturingOrderStatus.IN_PROGRESS,
+        ManufacturingOrderStatus.CANCELLED,
+    },
+    ManufacturingOrderStatus.IN_PROGRESS: {
+        ManufacturingOrderStatus.DONE,
+        ManufacturingOrderStatus.CANCELLED,
+    },
+    ManufacturingOrderStatus.DONE: set(),
+    ManufacturingOrderStatus.CANCELLED: set(),
+}
 
 
 def create_manufacturing_order(
@@ -151,3 +192,80 @@ def get_manufacturing_order_material_availability(
         can_produce=can_produce,
         lines=lines,
     )
+
+
+def consume_manufacturing_order_materials(
+    db: Session,
+    order_id: int,
+) -> ManufacturingOrderConsumptionResponse:
+    order = db.get(ManufacturingOrder, order_id)
+    if order is None:
+        raise ManufacturingOrderNotFoundError
+
+    if ManufacturingOrderStatus(order.status) in _TERMINAL_STATUSES:
+        raise OrderNotConsumableError
+
+    statement = (
+        select(ProductMaterial)
+        .where(ProductMaterial.product_id == order.product_id)
+        .order_by(ProductMaterial.id.asc())
+    )
+    product_materials = list(db.execute(statement).scalars().all())
+
+    # Verify all materials have sufficient stock before touching anything
+    for pm in product_materials:
+        required = pm.quantity * order.quantity
+        if pm.material.quantity_on_hand < required:
+            raise InsufficientStockError
+
+    lines: list[MaterialConsumptionLineResponse] = []
+
+    for pm in product_materials:
+        required = pm.quantity * order.quantity
+        before = pm.material.quantity_on_hand
+        pm.material.quantity_on_hand -= required
+        db.add(
+            StockMovement(
+                material_id=pm.material_id,
+                quantity=-required,
+                movement_type=MovementType.CONSUMPTION,
+                reference=order.reference,
+            )
+        )
+        lines.append(
+            MaterialConsumptionLineResponse(
+                material_id=pm.material_id,
+                quantity_consumed=required,
+                quantity_on_hand_before=before,
+                quantity_on_hand_after=pm.material.quantity_on_hand,
+            )
+        )
+
+    order.status = ManufacturingOrderStatus.DONE.value
+    db.commit()
+
+    return ManufacturingOrderConsumptionResponse(
+        manufacturing_order_id=order.id,
+        product_id=order.product_id,
+        order_quantity=order.quantity,
+        lines=lines,
+    )
+
+
+def update_manufacturing_order_status(
+    db: Session,
+    order_id: int,
+    new_status: ManufacturingOrderStatus,
+) -> ManufacturingOrder:
+    order = db.get(ManufacturingOrder, order_id)
+    if order is None:
+        raise ManufacturingOrderNotFoundError
+
+    current = ManufacturingOrderStatus(order.status)
+    if new_status not in _ALLOWED_TRANSITIONS[current]:
+        raise InvalidStatusTransitionError
+
+    order.status = new_status.value
+    db.commit()
+    db.refresh(order)
+    return order

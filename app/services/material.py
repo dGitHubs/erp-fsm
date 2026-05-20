@@ -3,10 +3,16 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models.material import Material
+from app.models.stock_movement import MovementType, StockMovement
 from app.schemas.material import MaterialCreate
+from app.schemas.material_receipt import MaterialReceiveRequest
 
 
 class MaterialSkuAlreadyExistsError(Exception):
+    pass
+
+
+class MaterialNotFoundError(Exception):
     pass
 
 
@@ -39,3 +45,32 @@ def list_materials(db: Session) -> list[Material]:
 def get_material_by_id(db: Session, material_id: int) -> Material | None:
     statement = select(Material).where(Material.id == material_id)
     return db.execute(statement).scalars().first()
+
+
+def receive_material_stock(
+    db: Session, material_id: int, data: MaterialReceiveRequest
+) -> StockMovement:
+    material = db.get(Material, material_id)
+    if material is None:
+        raise MaterialNotFoundError
+
+    material.quantity_on_hand += data.quantity
+    movement = StockMovement(
+        material_id=material_id,
+        quantity=data.quantity,
+        movement_type=MovementType.RECEIPT,
+        reference=data.reference,
+    )
+    db.add(movement)
+    db.commit()
+    db.refresh(movement)
+    return movement
+
+
+def list_stock_movements(db: Session, material_id: int) -> list[StockMovement]:
+    statement = (
+        select(StockMovement)
+        .where(StockMovement.material_id == material_id)
+        .order_by(StockMovement.created_at.asc())
+    )
+    return list(db.execute(statement).scalars().all())

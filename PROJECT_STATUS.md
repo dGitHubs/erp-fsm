@@ -1,8 +1,8 @@
 # ERP FSM - État du projet
 
-## Vue d’ensemble
+## Vue d'ensemble
 
-ERP FSM est une API ERP orientée fabrication, centrée sur le flux opérationnel allant de la définition des produits jusqu’à la préparation et la faisabilité de la production.
+ERP FSM est une API ERP orientée fabrication, centrée sur le flux opérationnel allant de la définition des produits jusqu'à l'exécution de la production et la traçabilité du stock.
 
 Le périmètre actuel couvre :
 - la gestion des clients
@@ -13,31 +13,37 @@ Le périmètre actuel couvre :
 - le calcul du coût matière
 - le calcul des besoins matière
 - la vérification de la disponibilité matière
+- la consommation matière et la mise à jour du stock
+- l'historique des mouvements de stock
+- la réception de stock
+- les transitions de statut validées des ordres de fabrication
 
 ---
 
 ## Jalons actuels
 
-Le projet permet maintenant de couvrir le flux de planification suivant pour un ordre de fabrication :
+Le projet couvre maintenant le flux complet de planification et d'exécution pour un ordre de fabrication :
 
 1. définir les produits et les matières
 2. relier les matières aux produits via une nomenclature (BOM)
 3. créer des ordres de fabrication
 4. calculer les besoins matière
 5. vérifier si le stock actuel permet de lancer la production
-
-Cela constitue une base solide pour passer ensuite à la consommation de stock et à l’exécution de la fabrication.
+6. consommer les matières et décrémenter le stock
+7. tracer chaque mouvement de stock (consommation, réception)
+8. réceptionner du stock entrant
+9. faire progresser l'ordre à travers un cycle de vie validé
 
 ---
 
 ## Réalisé
 
-### Fondations de l’API
+### Fondations de l'API
 - [x] Endpoint de health check
-- [x] Structure de l’application FastAPI
+- [x] Structure de l'application FastAPI
 - [x] Modèles SQLAlchemy et intégration base de données
 - [x] Schémas Pydantic
-- [x] Mise en place des tests automatisés
+- [x] Mise en place des tests automatisés (PostgreSQL, transaction rollback par test)
 
 ### Clients
 - [x] Créer un client
@@ -72,64 +78,66 @@ Cela constitue une base solide pour passer ensuite à la consommation de stock e
 - [x] Lister les ordres de fabrication
 - [x] Obtenir un ordre de fabrication par identifiant
 - [x] Validation du statut et de la quantité
+- [x] Transitions de statut validées (draft → confirmed → in_progress → done / cancelled)
 - [x] Tests automatisés
 
 ### Calcul des coûts
-- [x] Calculer le coût matière d’un produit
+- [x] Calculer le coût matière d'un produit
 - [x] Support des produits sans lignes de nomenclature
 - [x] Tests automatisés
 
 ### Planification de fabrication
-- [x] Calculer les besoins matière d’un ordre de fabrication
-- [x] Calculer la disponibilité matière d’un ordre de fabrication
+- [x] Calculer les besoins matière d'un ordre de fabrication
+- [x] Calculer la disponibilité matière d'un ordre de fabrication
 - [x] Déterminer si un ordre peut être produit avec le stock actuel
+- [x] Tests automatisés
+
+### Consommation matière
+- [x] Consommer les matières d'un ordre de fabrication (`POST /manufacturing-orders/{id}/consume`)
+- [x] Décrémenter `quantity_on_hand` selon la nomenclature × la quantité de l'ordre
+- [x] Vérification préalable du stock (tout ou rien)
+- [x] Passage automatique de l'ordre au statut `done` après consommation
+- [x] Protection contre la double consommation (erreur 409 si ordre déjà `done` ou `cancelled`)
+- [x] Tests automatisés
+
+### Gestion des mouvements de stock
+- [x] Modèle `StockMovement` avec quantité signée, type et référence
+- [x] Création automatique d'un mouvement à chaque consommation (type `consumption`)
+- [x] Réception de stock (`POST /materials/{id}/receive`) avec création d'un mouvement (type `receipt`)
+- [x] Historique des mouvements par matière (`GET /materials/{id}/stock-movements`)
 - [x] Tests automatisés
 
 ---
 
 ## Prochain jalon
 
-### Consommation matière
-La prochaine étape logique est de passer de la planification à l’exécution.
+### Front-end
+La prochaine étape logique est de donner une interface utilisable à l'API.
 
 Travaux prévus :
-- [ ] Ajouter un endpoint pour consommer les matières d’un ordre de fabrication
-- [ ] Décrémenter `quantity_on_hand` en fonction de la nomenclature × la quantité de l’ordre
-- [ ] Empêcher la consommation si le stock est insuffisant
-- [ ] Retourner un récapitulatif de consommation matière
-- [ ] Ajouter les tests automatisés
-
-Cette évolution permettra au système non seulement de vérifier la faisabilité de la production, mais aussi de refléter la consommation réelle de stock au moment du lancement ou de l’exécution d’un ordre.
+- [ ] Ajouter les écrans Clients, Produits, Matières
+- [ ] Ajouter les écrans Ordres de fabrication avec statut et actions (confirmer, consommer, annuler)
+- [ ] Afficher les besoins matière et la disponibilité matière
+- [ ] Afficher l'historique des mouvements de stock par matière
+- [ ] Créer un dashboard de base
 
 ---
 
 ## Backlog futur
 
-### Gestion d’inventaire
-- [ ] Historique des mouvements de stock
-- [ ] Réception / réapprovisionnement de matières
-- [ ] Ajustements d’inventaire
+### Gestion d'inventaire
+- [ ] Ajustements d'inventaire (type `adjustment`)
 - [ ] Réservation de matière pour les ordres de fabrication
 
 ### Exécution de fabrication
-- [ ] Cycle de vie plus riche des ordres de fabrication
 - [ ] Opérations / gammes de fabrication
-- [ ] Suivi du temps et de la main-d’œuvre
-- [ ] Workflow de fin de production
+- [ ] Suivi du temps et de la main-d'œuvre
 
 ### Fonctions supply et business
 - [ ] Support des achats
 - [ ] Devis de vente
 - [ ] Règles de tarification
 - [ ] Suivi des marges
-
-### Front-end
-- [ ] Ajouter une interface web pour consommer l’API
-- [ ] Créer un dashboard de base
-- [ ] Ajouter les écrans Clients, Produits, Matières
-- [ ] Ajouter les écrans Ordres de fabrication
-- [ ] Afficher les besoins matière et la disponibilité matière
-- [ ] Préparer la base pour la consommation matière
 
 ---
 
@@ -140,5 +148,7 @@ Cette évolution permettra au système non seulement de vérifier la faisabilit�
 - [x] Suite de tests OK
 - [x] Flux de planification de fabrication implémenté
 - [x] Flux de disponibilité matière implémenté
+- [x] Flux d'exécution (consommation, réception, mouvements de stock) implémenté
+- [x] Cycle de vie des ordres de fabrication implémenté
 
-> Dernier état vérifié : 54 tests passent
+> Dernier état vérifié : 75 tests passent
